@@ -1,0 +1,69 @@
+---
+title: "Word Cloud"
+author: "Thomas Nguyen"
+date: "30/10/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+To do: Add wordcloud to Give it a go! part
+# Summarising the data with visualisations
+
+Another approach in visualising text data is using word clouds. They provide simple and clear presentation of text data, presenting frequently used keywords bigger and bolder than the rest. As such, they are very easy and quick to understand. Furthermore, word clouds are visually engaging, which allow us to draw multiple insights quickly and allow us flexibility in interpretation.
+```{r}
+library(tidyverse)
+library(tidytext)
+library(wordcloud2)
+library(gutenbergr)
+library(tm)
+
+```
+
+```{r}
+darwin1 <- gutenberg_download(1228)[-(1:9),]
+darwin1$text <- removeNumbers(darwin1$text)
+
+darwin1_words <- darwin1 %>% 
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words, by = "word") %>%
+  count(word, sort = TRUE) %>%
+  mutate(len = str_length(word))  %>%
+  filter(!grepl("\\d", word))  
+```
+
+```{r}
+darwin1_words %>% filter(n > 100) %>%
+  ggplot(aes(x = n, y = fct_reorder(word, n))) + 
+  geom_point() +
+  labs(x = "Word Count", 
+       y = "", 
+       title = "Frequency of word appearance in Charle Darwin's On the Origins of Species, 1st edition",
+       subtitle = "After removing stop words, 'species' is the most frequently used word")
+```
+
+```{r}
+# install packages
+# install.packages("wordcloud2")
+
+library(wordcloud2)
+
+# Make a temporary dataframe, since wordcloud2 require only 2 columns which are word and freq.
+
+# Set seed so the word cloud to ensure reproducibility
+
+# Get the words that appeared more than 100 times
+set.seed(2586)
+
+temp <- data.frame(word = darwin1_words$word, n = darwin1_words$n) %>%
+ filter(n > 100) 
+set.seed(2586)
+wordcloud2(temp, size = 0.5)
+```
+
+
+

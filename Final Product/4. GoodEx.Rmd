@@ -1,0 +1,429 @@
+---
+title: "Assignment 1 Good example"
+author: "Thomas Winson"
+date: "`r Sys.Date()`"
+output:
+  bookdown::html_document2:
+    code_folding: hide
+    citation_package: biblatex
+    number_sections: yes
+    theme: cerulean
+    toc: yes
+    toc_float:
+      collapsed: no
+  html_document:
+    toc: yes
+    df_print: paged
+subtitle: What you should consider when buying a bag of coffee
+bibliography: ref.bib
+biblio-style: authoryear-comp
+link-citations: yes
+---
+<!-- CSS style for title page -->
+
+<style type="text/css">
+h1 {
+color: #5e422f
+}
+
+h2 {
+color: #5e422f
+}
+
+h3 {
+  color: #6f4e37
+}
+
+
+h1.title {
+  color:black;
+  text-align: center;
+  font-size:26px;
+}
+h3.subtitle {
+  color: #6f4e37;
+  text-align: center;
+}
+h4.author {
+  color: black;
+  font-size: 18px;
+
+}
+h4.date {
+  color: black;
+  font-size: 18px;
+}
+
+
+</style>
+[This example is written by `r knitr::combine_words(rmarkdown::metadata$author)`.]{style="color:#6f4e37;"}  
+
+
+
+Note from the author:  
+- This is just a suggestion, not a guide. How to do the assignment is purely depend on you.    
+- If you can see the knitted HTML version, there is a small box on the upper right of the page that says `Code`. Click on it to show/ hide all the code. 
+- It is recommended that you appropriately labelled your visualisation by adding graph title and axis labels for ggplot objects.  
+- Again, this is just a suggestion, not a guide. Do the assignment in the way that works best for you.    
+
+# Introduction (Optional)
+
+People drink coffee for various reasons: either to warm their soul in a chilling morning or to stay awake and focus after a long, restless night. Whatever the reason is, it is clear that we love the dark, fragrance liquid. Some people love coffee for its pleasant aroma. Some others love its unique flavour notes. Some simply love it because it is as black as their soul. But most would agree that nothing is better than a cup of great coffee to start a wonderful, productive day.
+ 
+Great coffee beans produce great coffee cups. The question is, what do we, coffee lovers, should consider when planning to buy a premium bag of charming black beans?  Hence, in this report. We will have a journey to the place where the coffee trees were raised and the beans were harvested, to see what affects the quality of our beloved coffee.
+
+
+# Data description
+## Data source
+The Coffee Quality Institute is a non-profit organization that grades coffee samples from around the world in a consistently and professionally manner.
+
+The coffee beans are graded by the Coffee Quality Institute's trained reviewers. The total rating of a coffee bean is a cumulative sum of 10 individual quality measures: aroma, flavor, aftertaste, acidity, body, balance, uniformity, clean cup, sweetness and cupper points. Each grade is on a 0–10 scale resulting in a total cupping score between zero and one hundred. [@coffeegrade2020] 
+
+## About the dataset
+The data is originally observed from the Coffee Quality Institute website and was scraped by @James2018, the data was then re-posted on [Kaggle](https://www.kaggle.com/volpatto/coffee-quality-database-from-cqi?select=merged_data_cleaned.csv) (Yes, this dataset is from Kaggle. And no, you are not allowed to use data from Kaggle). Furthermore, @Mock2020 did the initial cleaning for the scraped data. 
+## Data source
+The Coffee Quality Institute is a non-profit organization that grades coffee samples from around the world in a consistent and professional manner.
+
+The coffee beans are graded by the Coffee Quality Institute's trained reviewers. The total rating of a coffee bean is a cumulative sum of 10 individual quality measures: aroma, flavor, aftertaste, acidity, body, balance, uniformity, clean cup, sweetness and cupper points. Each grade is on a 0–10 scale resulting to a total cupping score between zero and one hundred. [@coffeegrade2020] 
+
+## Dataset source
+The data is originally observed from Coffee Quality Institute website and was scraped by @James2018, the data was then re-posted on [Kaggle](https://www.kaggle.com/volpatto/coffee-quality-database-from-cqi?select=merged_data_cleaned.csv). Furthermore, @Mock2020 did the initial cleaning for the scraped data. Originally, there are two separate data set `raw_robusta` and `raw_arabica`. They were then joined by implementing the function `bind_rows` to produce the merged data set, which is exported to a single CSV file “coffee_ratings.csv” with 1339 observations and 43 variables. 
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r include = FALSE}
+library(tidyverse)
+library(kableExtra)
+library(GGally)
+
+```
+
+```{r data, message=FALSE, warning=FALSE}
+coffee_ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-07/coffee_ratings.csv')
+coffee_ratings <- coffee_ratings %>% 
+  # Shorten the variables name
+  rename(country = country_of_origin,
+         total_points = total_cup_points,
+         method = processing_method)
+
+
+coffee_clean <- coffee_ratings %>% 
+  # Shorten the variables name
+  mutate(country = if_else(country == "Tanzania, United Republic Of", "Tanzania", country)) %>%
+  # Combine US name of obs
+  mutate(country = recode(country, 
+                          "United States" = "US",
+                          "United States (Hawaii)" = "US",
+                          "United States (Puerto Rico)" = "US"
+                          )) %>%
+  # Remove outliers
+  filter(total_points >20,
+         altitude_mean_meters < 9000)
+```
+## Structure of data 
+
+There are 43 variables in the data. Clearly, not all of them are useful in answers the research questions. Therefore, I describe only the most important variables that would be used in the report. Below is the description of variables included in the data set:
+
+```{r datadesc-table}
+tb <- tibble(
+  Variable = c("total_cup_points","species","owner","country_of_origin", "farm_name", "lot_number", "mill", "ico_number", "company", "altitude", "region", "producer", "number_of_bags", "bag_weight", "in_country_partner", "harvest_year", "grading_date", "owner_1", "variety", "processing_method", "aroma", "flavor", "aftertaste", "acidity", "body", "balance", "uniformity", "clean_cup", "sweetness", "cupper_points", "moisture", "category_one_defects", "quakers", "color", "category_two_defects", "expiration", "certification_body", "certification_address", "certification_contact", "unit_of_measurement", "altitude_low_meters", "altitude_high_meters", "altitude_mean_meters"),
+  Class = c("double","character","character","character","character","character","character","character","character","character","character","character","double","character","character","character","character","character","character","character","double","double","double","double","double","double","double","double","double","double","double","double","double","character","double","character","character","character","character","character","double","double","double"),  
+  Description = c("Total rating/points (0 - 100 scale)","Species of coffee bean (arabica or robusta)","Owner of the farm","Where the bean came from","Name of the farm","Lot number of the beans tested","Mill where the beans were processed","International Coffee Organization number","Company name","Altitude - this is a messy column - I've left it for some cleaning","Region where bean came from","Producer of the roasted bean","Number of bags tested","Bag weight tested","Partner for the country","When the beans were harvested (year)","When the beans were graded","Who owns the beans","Variety of the beans","Method for processing",
+"Has both fragrance (ground beans) and aroma (hot water with coffee powder)","Flavor grade","Length of positive flavor remaining after the coffee is swallowed",
+"The score depends on the origin characteristics and other factors(degree of roast)","Body grade","Balance grade","Refers to the consistency of flavor . 2 points are awarded for each cup displaying this attribute, with a maximum of 10 points if all 5 cups are the same.","Refers to a lack of interfering negative impressions from first ingestion to final aftertaste","Sweetness grade","The cupper marks the intensity of the Aroma on a scale","Moisture Grade","Full black or sour bean, pod/cherry, and large or medium sticks or stones(count)","Unripened beans that are hard to identify during hand sorting and green bean inspection","Color of bean","Parchment, hull/husk, broken/chipped, insect damage, partial black or sour, shell, small sticks or stones, water damage(count)","Expiration date of the beans","Who certified it","Certification body address","Certification contact","Unit of measurement","Altitude low meters","Altitude high meters","Altitude mean meters"
+))
+
+tb1 <- tb %>%
+  kable(caption = "Data description for variable included in the data") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  scroll_box(height = "300px")
+tb1
+```
+
+
+
+# Questions of interest
+
+This report aims to discover the likely factors that influence coffee quality.
+
+Secondary questions:
+
+1. Which country produces the best quality coffee beans? Is there any large difference in coffee quality worldwide?
+
+2. Does altitude affect the quality of coffee beans?
+
+3. Are there any trends in grading dates?
+
+
+## Approach of questions
+
+### Which Country produces the best quality coffee beans? Is there any large difference in coffee quality worldwide?
+when we need to compare one numeric variables with several observation per group, using the boxplot is a great idea. 
+From [Data-to-viz](www.data-to-viz.com):  
+In the boxplot, the line that divides the box into 2 parts represents the median of the data. The end of the box shows the upper and lower quartiles. The extreme lines show the highest and lowest value excluding outliers.  
+- Boxplot hides the sample size of each group, show it with annotation or box width.  
+- Boxplot hides the underlying distribution. Use jitter if low number of data points, or use violin with bigger data.  
+- Order your boxplot by median can make it more insightful.  
+
+Note that, as the number of graded coffee beans differ largely from country to country, some of the country with small observation is removed from the plots. Also, for the US, there are 3 areas that produce coffee beans: Mainland, Puerto Rico and Hawaii. In this research, the researchers merge all this areas together to better represent the country. 
+
+```{r q1-check, results= "hide"}
+
+# Make a plot to identify the anomalies in the data: 
+# 3 variables for the US. 
+# Small observations for countries like: Zambia, Rwanda and Japan
+# Outliers in total scores
+
+coffee_ratings %>% 
+  ggplot(aes(x = total_points,
+             y = country))+
+  geom_boxplot()+
+  ggtitle("Country and total points, using raw dataset")
+
+
+```
+
+
+```{r q1, results='asis', fig.cap="Boxplot for total ratings of coffee beans of countries with at least 5 coffee samples."}
+
+# Make a vector of countries with more than 5 observations
+temp <- coffee_clean %>% group_by(country) %>%
+  summarise(count = n()) %>%
+  filter(count > 5) %>% 
+  pull(country) # Get the country name out as vector
+
+# Make the plot
+coffee_clean %>%
+  # filter countries with more than 5 observations
+  filter (country %in% temp) %>%
+  # Fct_reoder is used to reorder country by total points in the plot(making it easier to interpret)
+  mutate(country = fct_reorder(country, total_points)) %>% 
+  ggplot(aes(x = country,
+             y = total_points))+
+  # Change color to be more coffee-related
+    geom_boxplot(color = "#5e422f")+
+  # Flip the plot since I mistake x and y axis, and I don't want to fix them again
+    coord_flip() +
+    ggtitle("Total ratings of coffee bean by country ")+
+    xlab("Country")+
+    ylab("Total ratings")+
+    theme_bw()
+
+```
+Figure \@ref(fig:q1) aims to address the primary question **Which country produces best quality coffee beans?**. The X-axis shows the overall rating achieved by the coffee bean while the Y-axis denotes the country where it was produced. 
+
+Ethiopia produced the highest quality of coffee beans. However, it is interesting to note that there is not much variation between countries as most of them have median scores of around 80-85 points. Thus, we can conclude based on the dataset, that there is not much difference in coffee quality between countries, with Ethiopia produces the highest-quality beans. 
+
+### Does altitude affect the quality of coffee beans?
+
+Now, we want to see the relationship between altitude and the quality of coffee beans. In other words, we want to compare 2 numeric variables. Scatterplot is the perfect tool for this job. 
+From [Data-to-viz](www.data-to-viz.com):  
+A scatterplot displays the relationship between 2 numeric variables. For each data point, the value of its first variable is represented on the X axis, the second on the Y axis
+
+
+- For scatter plot, over plotting is the most common mistake when sample size is high. Consider decrease dot size, or modify transparency.
+- Don't forget to show subgroups if you have some. If there are too many countries, how about categorize them by continent?
+
+```{r q2-check, results = "hide"}
+# Outliers in Height and Scores
+
+coffee_ratings %>%
+  ggplot()+
+  geom_point(aes(x = total_points, y = altitude_mean_meters))+
+  ggtitle("Altitude and scores Using raw dataset")
+
+```
+
+
+```{r alt-plot,  results='asis', fig.cap=" Altitude and Total cup points scatter plot"}
+
+ggplot(data = coffee_clean, 
+       aes(x = total_points, y = altitude_mean_meters)) +
+  # Change color to be more coffee-related
+  geom_point(alpha = 0.7, color = "#5e422f") +
+  ylab("Average altitude (meters)")+
+  xlab("Total Cupping Points")+
+  ggtitle("Altitude and Total Cupping Points")
+
+```
+From \@ref(fig:alt-plot), we can see that there is no noticeable trend in total cup points and height. It is also interesting to note that the majority of coffee samples were grown 750-2000m above sea levels. Also, most coffee beans seem to score very high, around 80-85 points.
+
+
+## What are the trends in grading date? 
+While waiting for his lovely cup of coffee to brew, the author happened to read a interesting research @judge that has found correlation between a parole case’s success rate and whether the case was heard right before or after lunch. The idea is that judges might be more exhausted before lunch, which would make them stricter. Enlightened, he wanted to see if there is anything similar happen in coffee grading. Are graders stricter on Friday compared to Monday?
+
+```{r date_time}
+# Use lubridate to wrangle date values
+library(lubridate)
+coffee_clean_date <- coffee_clean %>% 
+  mutate(date = mdy(grading_date),
+         # Create new column for year variable. use ?year for more detail of the function
+         year = year(date),
+         # Create new column for month variable. use ?month for more detail of the function
+         month = month(date, label = TRUE),
+         day = day(date),
+         wday = wday(date, label = TRUE, week_start = 1))
+```
+
+```{r date-function}
+# I'm lazy with the copy and paste, so I made function
+# Make it easier to recall what I did, too
+coffee_date_plot <- function(data, col){
+  data %>%
+    group_by({{col}}) %>%
+    summarise(mean_score = mean(total_points)) %>%
+    mutate(col = as.factor({{col}})) %>%
+    ggplot(aes(x = col, y = mean_score))+
+    geom_col(fill = "#6F4E37") +
+    ylab("Mean Scores")
+}
+
+```
+
+
+
+```{r p-date, fig.cap = "Mean total cup scores by week day. The average point stay stable throughout the week"}
+
+#   coord_cartesian(ylim=c(50,90)) comes from: 
+# https://stackoverflow.com/questions/5936112/rescaling-the-y-axis-in-bar-plot-causes-bars-to-disappear-r-ggplot2
+coffee_clean_date %>% 
+  coffee_date_plot(wday) +
+  xlab("Day")+
+  ggtitle("Mean Total Score by Weekday")+
+  # Zoom in to see the top portion of the plot 
+  coord_cartesian(ylim=c(50,90))+
+  theme_bw()+ # Blank background
+  theme(plot.title = element_text(hjust = 0.5)) # Make the title appear at the middle
+
+
+```
+
+``` {r p-month-year, fig.cap = "Mean total cup score per grading year and month"}
+p1 <- coffee_clean_date %>% 
+  coffee_date_plot(year) +
+  xlab("Year")+
+  ggtitle("Mean Total Score by Year")+
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5), 
+        axis.text.x = element_text(angle = 30))+
+  coord_cartesian(ylim=c(50,90))
+# try to add theme_bw() here and see what will happen?
+
+p2 <- coffee_clean_date %>% 
+  coffee_date_plot(month) +
+  xlab("Month")+
+  ylab("")+
+  theme_bw()+
+  ggtitle("Mean Total Score by Month")+
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 30))+
+  coord_cartesian(ylim=c(50,90))
+
+# Make plot to appear side-by-side by using the patchwork packages
+library(patchwork)
+p1+p2
+
+```
+**The answer seems to be No.**
+
+From figure \@ref(fig:p-date), it seems that coffee graders seem to be consistent with their grading across the weeks.
+
+But, does this trend stay true across years and months? Figure \@ref(fig:p-month-year) answer that question. The figure suggest that the score remain stable throughout months and years.
+
+From the previous findings, the researchers conclude that coffee graders seem to be consistent with their grading across years, months and days of the week. On that ground, it is safe to say that coffee seems to be consistent in quality throughout the years.
+
+
+
+## Limitations and suggestions for future research
+
+The report has potential limitations: There is a lack of available and reliable data. The measurement unit is not united. For example, altitude was measured in both feet and meters. Moreover, the sample size is small, and differ largely from country to country, with some countries have hundreds of observations while others have only one or two observations.
+
+The dataset is outdated (it was collected in 2018), with several missing values in critical variables (i.e processing method, region, producers, etc.). They are obstacles for the researchers to find meaningful trends and relationships.
+
+Thus, it is recommended for future researchers to use a larger, more accurate and well-rounded dataset to perform their study. 
+
+## Conclusion
+In conclusion, neither country of origin, nor altitude, nor defects really have large impact on the quality of coffee beans. So, if you want to buy a bag of coffee, you should keep that in mind and instead choose the coffee that best suited your taste. A little tip here, if you're looking for fermented and wild flavors in the cup, coffee bean from Ethiopia (processed with Natural/Dry method) will surely satisfy you.
+
+
+
+
+# Appendix
+
+## Appendix 1: New question that can be answered by the dataset:
+
+### What is the impact of different processing method on individual grading criteria? 
+
+
+Here, I chose 6 grading criteria based on the coffee scoring article provided on @mycuppa:
+
+* Aroma
+* Aftertaste
+* Flavor
+* Acidity
+* Body
+* Balance
+
+Because we wanted to explore 6 variables, scatter plot to compare them pair-wise is my idea. However, it is tiresome creating each plot one by one. Therefore, I utilized ggscatmat function from GGally. the function will create scatterplot matrix for quantitative variables with density plots on the diagonal and correlation printed in the upper triangle.
+```{r q5p2, results='asis', fig.cap="Scatterplot matrix of grading criterias, differentiated by processing method"}
+
+# Note that I library(GGally at the top chunk already)
+grading <- coffee_clean %>%
+  dplyr::filter(method %in% c("Natural / Dry", 
+                              "Pulped natural / honey",
+                              "Semi-washed / Semi-pulped", 
+                              "Washed / Wet")) %>%
+  dplyr::select(method, aroma, aftertaste, 
+                flavor, acidity, body, balance, total_points) %>%
+  na.omit()
+
+q5p2 <- grading %>%
+  ggscatmat(columns = 2:8, color = "method", alpha = 0.6) +
+  scale_colour_brewer(palette = "Set1") +
+  ggtitle("Relationship between grading criteria by Processing Method")
+
+q5p2
+
+```
+
+The scatter plot matrix examines the relationship between each grading criteria, with different color represent different methods of processing
+
+Overall, based on the density plots (plots on diagonal line), most processing method seems to generate similar results. Furthermore, the primary processing method are "Washed/Wet" and "Natural/Dry" across all coffee bean producers.We can barely capture the appearance of other two methods. The method "Pulped natural/honey" have relatively low density compared to other. It also has different distribution. 
+
+
+
+## Appendix 2. Using summary to identify outliers
+
+`summary()` is a great function to detect strange points in numeric variables. However, it requires some background knowledge, such as knowing the important variables, and knowing the expected distribution of variables. Let's look at the following example
+
+```{r}
+coffee_ratings %>% 
+  # Select only numeric/ double variable
+  select_if(is.numeric) %>%
+  summary()
+```
+The table might look pretty menacing. So, let's focus on just total_points and altitude_mean_meters.
+In total_points, we can see that while the mean and median are around 82, 1st and 3rd quartiles are 81 and 83, respectively the min value is 0. This value is suspicious and we should research on it (by draw a histogram to check the distribution, for example).
+
+The same for altitude_mean_meters, we can see that the max value is 190,164, too high when compare to the mean, median and quartiles. On top of that, we already know that 190,000m is pretty unrealistics for coffee to grow. So we need to explore this variable more.
+
+## Appendix 3. Bonus on coffee processing method:
+Coffee processing are very interesting. Here, I have found a couple of videos for you:
+
+Medium-length video(4-6 minutes):
+
+[Natural coffee processing](https://www.youtube.com/watch?v=yagagM7SlWs), the traditional way to process coffee.
+
+[Washed coffee processing](https://www.youtube.com/watch?v=Az0W61hotLM), another very common way to process coffee.
+
+[Wet-Hulled/ Semi-washed Coffee Processing](https://www.youtube.com/watch?v=R1z4omBqYxQ), it is not very popular, developed for humid, less sunny climate.
+
+[Honey Coffee Processing](https://www.youtube.com/watch?v=k5iw31z1FAY), a new processing method. It is becoming more common, especially in Central America.
+
+Lastly, I know that we are all have the habit of drinking coffee alone, maybe in the dark of night. Afterall, how can one finish one's study without countless cup of coffee and sleepless nights? However, please remember that coffee taste better enjoying with friends. So, Would you like a cup of coffee? 
+
+

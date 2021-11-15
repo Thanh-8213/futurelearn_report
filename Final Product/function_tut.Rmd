@@ -1,0 +1,124 @@
+---
+title: "Function_Tut"
+author: "Thomas Nguyen"
+date: "Sys.Date()"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+
+```{r include = FALSE}
+library(tidyverse)
+```
+
+```{r data}
+tb_long <- readRDS("tb_long.rds")
+```
+
+### How to write function:
+
+```{r}
+myfun <- function(inputs){outputs}
+
+myfun <- function(inputs){
+  # Codes
+  # Lots of code
+  
+  return(output)
+}
+```
+
+
+
+```{r}
+
+# A few tips
+# 1. Pick a short but informative name, preferably a verb.  
+# 2. List inputs, or arguments, inside the round brackets inside function. If we had more the call would look like function(x, y, z).    
+# 3. Place the code you have developed in body of the function, a {} block that immediately follows function(...). Remember to document them.
+
+```
+
+Example:
+
+
+```{r}
+# Function to make a bar chart to see the number of cases of tuberculosis across years for a specific country.
+# First argument (x) is data
+# Second argument (y) is the country we want to draw the graph for (Must be inside double quotation mark)
+# X axis demonstrates year
+# Y axis demonstrates count
+
+tb_long %>%
+  filter(country == "Australia") %>%
+  ggplot(aes(x = year, y = count))+
+  geom_col(fill = "blue")
+
+tb_long %>%
+  filter(country == "China") %>%
+  ggplot(aes(x = year, y = count))+
+  geom_col(fill = "blue")
+
+
+plot_a_country <- function(data, country_name){
+  # Filter country
+  plot_dat <- data %>% filter(country == country_name)
+  # Draw the plot
+  plot <- plot_dat %>%   
+    ggplot(aes(x = year, y = count))+
+    geom_col(fill = "red")
+  
+  return(plot)
+}
+
+plot_a_country(tb_long, "China")
+plot_a_country(tb_long, "Australia")
+plot_a_country(tb_long, "Belarus")
+
+
+```
+
+
+## About curly curly => {{ }} 
+
+It was hard to write function with tidyverse. R will throw all type of error at you. You couldn't easily use select(), summarise(), group_by() inside a function. Curly curly helps with that. It work *within* the function.
+
+When you create a function using select(), summarise(), group_by(), wrap the function arguments containing data frame variables with {{.
+
+Example:
+
+```{r eval = FALSE}
+# This code will run nicely
+
+select_run <- function(data, var1, var2){
+   data %>% select({{var1}}, {{var2}}) 
+ }
+
+select_run(tb_long, type, year)
+
+# This will happen if you remove the curly curly 
+
+ select_notrun <- function(data, var1, var2){
+   data %>% select(var1, var2) 
+ }
+ select_notrun(tb_long, type, year)
+```
+
+```{r}
+# You can not run this function if you remove the curly curly
+
+# Function to find the total cases by country since first recorded
+ 
+total_by <- function(data, var, by) {
+  data %>%
+    group_by({{by}}) %>%
+    summarise(total_cases = sum({{var}}, na.rm = TRUE)) %>%
+    arrange(desc(total_cases))
+}
+
+total_by(tb_long,count, country)
+```
+

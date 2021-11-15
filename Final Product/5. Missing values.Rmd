@@ -1,0 +1,209 @@
+---
+title: "Missing var"
+author: "Thomas Nguyen"
+date: "15/10/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+To do:
+Add note for 1.14: miss_var_summary if one prefer a tabular view.
+- The importance of missing value: Missing value is the bane of data analytics, survivor bias airplane for example.  If you ignore the  missing values, you will likely to arrive at incorrect decisions. If you impute the missing badly you are also likely to arrive at incorrect decisions.
+
+Add note for missing values: Change "Cases" to "Observations"
+Better explaination: 
+If the variable has too much missing value, Eg, 90% is missing. We might simply drop the variable since the imputed value might be unreliable. Also, if the observation has many missing values, Eg, you have 9 variables in the dataset, one of the observations is missing in 8 of them. You can also consider dropping this row. 
+
+Do it yourself: Use tidymodels to impute mean and impute linear
+
+```{r}
+# Load naniar package
+library(naniar)
+library(tidyverse)
+# Look at oceanbuoys data
+glimpse(oceanbuoys)
+
+miss_case_table(oceanbuoys)
+miss_var_summary(oceanbuoys)
+airquality %>%
+  group_by(Month) %>%
+  miss_case_table()
+
+```
+## The first copy and run
+```{r echo = FALSE}
+tao_shadow <- bind_shadow(oceanbuoys)
+
+tao_shadow <- tao_shadow %>%
+  impute_mean_at(vars(sea_temp_c,
+                      air_temp_c))
+
+ggplot(tao_shadow,
+       aes(x = sea_temp_c,
+           y = air_temp_c, 
+           colour = air_temp_c_NA)) +
+  geom_point(alpha = 0.5) + 
+  facet_wrap(~year) + 
+  scale_colour_brewer(palette = "Dark2")
+
+```
+## The second copy and run
+```{r}
+tao_shadow <- bind_shadow(oceanbuoys)
+tao_shadow <- tao_shadow %>%
+  group_by(year) %>%
+  impute_mean_at(vars(sea_temp_c,
+                      air_temp_c)) %>%
+  ungroup()
+
+mean_impute_plot <- ggplot(tao_shadow,
+       aes(x = sea_temp_c,
+           y = air_temp_c, 
+           colour=air_temp_c_NA)) +
+  geom_point(alpha=0.5) + 
+  facet_wrap(~year) + 
+  scale_colour_brewer(palette="Dark2")+  
+  ## Add a tag and label for both axis
+  labs(tag = "Mean Imputation")+
+  xlab("Sea Temperature (C)")+
+  ylab("Air Temperature (C)")
+
+
+mean_impute_plot
+```
+
+## Nearest neighbours imputation + copy and run (Proposed changes)
+The tidymodels framework is a collection of packages for modeling and machine learning using tidyverse principles. We will learn how to apply Nearest neighbours imputation using tidymodels. 
+
+```{r}
+# Install and load tidymodels
+# install.packages("tidymodels")
+library(tidymodels)
+
+tao_shadow <- bind_shadow(oceanbuoys)
+impute_rec  <- tao_shadow %>%
+  # In recipe, choose the variable that we will use. In this case:
+  # year, sea_temp_c, air_temp_c, air_temp_c_NA
+  recipe(year~ sea_temp_c+air_temp_c+air_temp_c_NA) %>%
+  # Impute the missing values with all predictors
+  step_impute_knn(all_predictors()) 
+
+
+# get the imputed data out using juice()
+# You can use bake() to apply the recipe to other dataset. (Eg. New dataset) 
+imputed <- prep(impute_rec) %>% juice() %>%
+  mutate(id = row_number())
+
+## Draw the plot
+knn_impute_plot <- ggplot(imputed,
+       aes(x = sea_temp_c,
+           y = air_temp_c, 
+           colour=air_temp_c_NA,
+           group = id)) +
+  geom_point(alpha=0.5) + 
+  facet_wrap(~year) + 
+  scale_colour_brewer(palette="Dark2")+
+    ## Add a tag and label for both axis
+  labs(tag = "KNN Imputation")+
+  xlab("Sea Temperature (C)")+
+  ylab("Air Temperature (C)")
+knn_impute_plot
+```
+
+
+Let's compare the two method 
+```{r}
+
+#Install patchwork
+# Install.packages("patchwork")
+
+## Patchwork allows us to combine ggplots into 1 graphic.
+library(patchwork)
+
+# Display both graphs 
+mean_impute_plot / knn_impute_plot
+
+# Try to replace the "/" with "+". What will happen?
+```
+## What do you learn?
+The imputed values are **closer** to the complete case values in both methods.  
+
+However, for mean imputation method, the data points form a rigid line, mismatching the variation. They also extend outside the range of complete values. For KNN method, the values blended well with the complete values (there are still some points that extend outside)
+
+There is a problem: the imputed air temperature value for these high sea temperature cases is **lower** than expected for both mean imputation.and KNN imputation. There is also an outlier in 1993 for KNN imputation. These findings may possibly impede good model fitting.
+
+
+## KNN-Impute by year
+
+```{r}
+
+# Impute by years
+
+# Take only 1993 data
+tao_impute_93 <- bind_shadow(oceanbuoys) %>%
+  arrange(year, sea_temp_c, air_temp_c) %>%
+  filter(year=="1993") 
+
+# Prepare the recipe that use only 1993 data
+impute_rec_93 <- tao_impute_93 %>%
+   # In recipe, choose the variable that we will use. In this case:
+   # year, sea_temp_c, air_temp_c, air_temp_c_NA
+   recipe(year~ sea_temp_c+air_temp_c+air_temp_c_NA) %>%
+   # Impute the missing values with all predictors
+   step_impute_knn(all_predictors()) 
+#Get imputed value for 1993
+tao_impute_93 <-  prep(impute_rec_93) %>% bake(new_data = tao_impute_93) %>%
+   mutate(id = row_number())
+
+
+# Take only 1997 data
+tao_impute_97 <- bind_shadow(oceanbuoys) %>%
+  arrange(year, sea_temp_c, air_temp_c) %>%
+  filter(year=="1997") 
+
+# Prepare the recipe that use only 1997 data
+impute_rec_97 <- tao_impute_97 %>%
+  # In recipe, choose the variable that we will use. In this case:
+  # year, sea_temp_c, air_temp_c, air_temp_c_NA
+  recipe(year~ sea_temp_c+air_temp_c+air_temp_c_NA) %>%
+  # Impute the missing values with all predictors
+  step_impute_knn(all_predictors()) 
+# Get imputed value for 1997
+tao_impute_97 <-  prep(impute_rec_97) %>% juice() %>%
+  mutate(id = row_number())
+
+# Bindings 2 imputed dataset to draw the plot
+tao_impute <- rbind(tao_impute_93, tao_impute_97)
+
+# Make the shadow dataset with imputed value from tao_impute
+tao_shadow <- bind_shadow(oceanbuoys) %>%
+  arrange(year, sea_temp_c, air_temp_c) %>%
+  mutate(sea_temp_c = tao_impute$sea_temp_c,
+         air_temp_c = tao_impute$air_temp_c)
+
+# Draw the plot
+knn_impute_plot_by_years <- ggplot(tao_shadow,
+       aes(x = sea_temp_c,
+           y = air_temp_c, 
+           colour=air_temp_c_NA)) +
+  geom_point(alpha=0.5) + 
+  facet_wrap(~year) + 
+  scale_colour_brewer(palette="Dark2") +
+  labs(tag = "KNN Imputation by year")+
+  xlab("Sea Temperature (C)")+
+  ylab("Air Temperature (C)")
+
+
+library(patchwork)
+knn_impute_plot/ knn_impute_plot_by_years
+```
+
+We can see there is still a rigid line that extends outside of the range of complete values in KNN imputation. This can happen if all of the points missing on air temp (ones with high values on sea temp) have the exact same nearest neighbours. If you increase k, to add more nearest neighbours, eventually the line should break. However, there are multiple missings at extremes of sea temp so the line is probably as good as can be done by nearest neighbours.
+
+There is a strange point in 1993 data that disappear when we impute the data by year. It is suspected that this point should be a 1997 record and there has to be an error in the data. When we apply knn-imputation with only 1993 data, it jumps to its neighbour in 1993 since there are none in 1997.  
+

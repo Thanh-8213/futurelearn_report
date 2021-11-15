@@ -1,0 +1,180 @@
+---
+title: "Shortcuts, Syntax and Operator"
+author: "Thomas Nguyen"
+date: "02/10/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+## What is this?
+Hi there, how are you? Are you doing well with the course?
+
+If you are enjoying the course, congratulation, keep on the great work! If you are struggling, worry not. Learning a new language is a difficult task. However, as long as you continue learning, you will conquer it. Don't give up just yet.
+
+I create this asset as a "further reading" section, especially for new learners that have no knowledge in R. It is a collection of shortcuts, syntax and operators that I found handy. It can act as a "cheat sheet" that you can comeback and read again from time to time. This "cheat sheet" saved me large amount of time and make me more productive. It also makes coding with R smoother. In composing this part, I hope that you can apply the knowledge in here in your future works and projects. 
+
+For the Operator part, you will remember them in no time, so I leave it here just in case you need a quick reminder.
+
+For the base R syntax, they confused me when I first learned them. Since they are all over StackOverflow and the internet, you will stumble on them sooner or later. They are old and not used much, and thus are not taught in the course. However, I figured that knowing the basics of base R may help you with your learning or handling assignments, and solving real-life problems that you will face in the future.  
+
+
+
+## Shortcuts
+Some useful shortcuts in R that will save you time.
+See more in [here](https://support.rstudio.com/hc/en-us/articles/200711853-Keyboard-Shortcuts) (or press Alt+Shift+K/ Option+Shift+K)
+
+| Description                      | Windows & Linux |       Mac      | Notes                       |   
+|----------------------------------|-----------------|----------------|-----------------------------|
+| Left assignment                  | Alt+ -          | Option+ -      | Shortcut for  "<-"          | 
+| Undo                             | Ctrl+Z          | Cmd+Z          |                             |   
+| Redo                             | Ctrl+Shift+Z    | Cmd+Shift+Z    | Not Ctrl + Y.               |   
+| Insert pipe operator             | Ctrl+Shift+M    | Cmd+Shift+M    | Shortcut for pipe (%>%)     |   
+| Comment/uncomment lines          | Ctrl+Shift+C    | Cmd+Shift+C    | Add # to the start of lines |   
+| Move cursor to Source Editor     | Ctrl+1          | Cmd+1          | Move your cursor to Source Editor (Rscript, Rmarkdown)                 |   
+| Move cursor to Console           | Ctrl+2          | Cmd+2          | Move your cursor to Console                  |   
+| Save active document             | Ctrl+S          | Cmd+S          | Essenstial Shortcut         | 
+| Show Keyboard Shortcut Reference | Alt+Shift+K     | Option+Shift+K |                             |  
+| Insert chunk                     | Ctrl+Alt+I      | Cmd+Option+I   | Useful                      | 
+
+
+## Operator & Math Function
+
+| Operator | Description              |
+|----------|--------------------------|
+| <=       | Less than or equal to    |
+| >=       | Greater than or equal to |
+| ==       | Equal to                 |
+| !=       | Not equal to             |
+| `<-`     | Leftward Assignment      |
+| `->`     | Rightward Assignment     |
+| !        | Negation                 |
+| `x | y`  | X or Y                     |
+| `x & y`  | X and Y                    |
+| %in%     | Element in a set. If you are making multiple comparisons use %in% rather than ==.    |
+
+## Math Function
+
+|Operator     |Description                 | Operator | Description  |
+|-------------|----------------------------|------------|------------------------------------|
+| round(x, n) | Round to n decimal places. | sum(x)     | Sum                                |
+| log(x)      | Natural log                | mean(x)    | Mean                               |
+| exp(x)      | Exponential of x           | median(x)  | Median                             |
+| sqrt(x)     | Square root of x           | max(x)     | Max                                |
+| abs(x)      | absolute value of x        | min(x)     | Min                                |
+
+
+The %in% operator in R can be used to identify if an element (e.g., a number) belongs to a vector or dataframe.
+Example: `filter(tb_long, iso3 %in% c("AUS", "NZL", "IDN"))`.
+`
+For select, you can drop variables by prefixing the name with -.
+Example: `select(tblong, -count)`
+
+
+
+
+
+### Base R operator
+Have you ever wonder that before Tidyverse, how do people "select" or "Filter"? Back in those days, people used base R. Hopefully, this section helps you in understand base R.
+
+#### The `$` sign
+The dollar sign `$` operator can be used to select a variable/column, assign new values to a variable/column, or add a new variable/column in an R object. It is still useful when using with unique() and distinct(). 
+Example:
+
+```{r echo = TRUE}
+
+# Create my own dataframe: 
+stream_service <- data.frame(
+ ID = c(1:3),
+ service_name = c("Netflix", "Disney+", "HBO"),
+ service_price = c(28, 19, 25)
+)
+# Select the service_name columns:
+stream_service$service_name
+
+# Make new columns for shows
+stream_service$shows <- c("Squid Game", "Loki", "Friends")
+
+# Make new columns for price, because we have a 30% discount for every service:
+stream_service$discount <- stream_service$service_price*0.8
+print(stream_service)
+
+
+
+```
+
+#### The Square Brackets `[]`
+
+Square Brackets [] allows you to **Extract** elements from data. It is easier to understand [] with example:
+
+| Syntax   | Description                             |
+|----------|-----------------------------------------|
+| [2, ]    | Select row 2                            |
+| [ , 1]   | Select column 1                         |
+| [1, 2]   | Select an element (row 2, column 1)     |
+| [1, 1:5] | Select first column, from column 1 to 5 |
+
+Examples:
+
+```{r}
+# Example
+stream_service[1,2]
+stream_service[, 1]
+stream_service[2, ]
+stream_service[1, 2:3]
+```
+
+## Tips on Rmarkdown
+
+
+See the [R Markdown Reference Guide](https://www.rstudio.com/wp-content/uploads/2015/03/rmarkdown-reference.pdf) for a complete list of knitr chunk options.
+
+| Option                | Description                                                                            |
+|-----------------------|----------------------------------------------------------------------------------------|
+| {r chunkname}         | Set chunkname>. Debugging is easier with this. Try to avoid spaces, periods (.), and underscores (_). Use hyphen(-) instead. Eg, my-codechunk is a good label while my.codechunk or chunk 1 are bad|
+| eval = FALSE          | Do not run the code in the codechunk.                                                  |
+| echo = FALSE          | Run the chunk, display only results (and not the code) in knitted file.                |
+| message = FALSE       | Prevent any message to appear in the knitted file. Eg. Message from ggplot2            |
+| warning = FALSE       | Prevent any warning to appear in thr knitted file. Eg. Warning from library(tidyverse) |
+| include = FALSE       | Run the chunk. Nothing from the code chunk will appear in the knitted file.            |
+| results = 'hide'      | Hide the results of the chunk.                                                         |
+| fig.cap = "..."       | Adds a caption to graphical results                                                    |
+| fig.width, fig.height | Set the figure width and height (in inches) Eg. ```{r, fig.width=4, fig.height=6}      |
+
+
+Example: ```{r, my-code-chunk, echo = FALSE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 4, fig.cap = "This is a figure caption"}
+You may use knitr::opts_chunk$set() to change the default values of chunk options in a document. 
+
+For example, you may put this in the first code chunk of your document:
+```{r, echo =TRUE,  fig.cap = "This is a figure caption"}
+
+# Show code, hide message and warning, set figure width and height to 6 inches. 
+# All code chunks will have this setup if does not specified otherwise
+knitr::opts_chunk$set(
+  echo = TRUE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 6
+)
+
+
+```
+It is good practice to include every package you use at the setup code chunk (the first codechunk when you create a new Rmd file). Or put them in a code chunk at the top of the Rmd file.
+Example: 
+```{r library, echo = TRUE, warning=FALSE, message = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(tibble)
+library(tidyr)
+library(readr)
+library(stringr)
+library(readxl)
+```
+
+## Give it a go!
+
+Use
+- Make a new code chunk using Ctrl+Alt+I.  
+- Use the verb select to get columns country to age_group (excluding count).  
+- Use the verb filter to select TB cases only that are NOT from Australia, Afganistan and France. Name the code chunk "filter". Hint: {r *****}
+- Make a bar plot for Australia TB cases, with X-axis shows year and Y-axis shows count. Hide the warning from ggplot (there will be a warning about missing values).
+- Comment the filter  of the codechunk you have made using Ctrl + Shift + C.
+
